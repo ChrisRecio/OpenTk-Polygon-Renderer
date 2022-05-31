@@ -9,10 +9,22 @@ namespace Collision_Simulation
     {
         private int vertexBufferHandle, shaderProgramHandle, vertexArrayHandle;
 
+        public Game(int width = 1280, int height = 768, String title = "Collision Simmulation") : base(
+            GameWindowSettings.Default,
+            new NativeWindowSettings()
+            {
+                Title = title,
+                Size = new Vector2i(width, height),
+                WindowBorder = WindowBorder.Fixed,
+                StartVisible = false,
+                StartFocused = true,
+                API = ContextAPI.OpenGL,
+                Profile = ContextProfile.Core,
+                APIVersion = new Version(3, 3)
 
-        public Game() : base(GameWindowSettings.Default, NativeWindowSettings.Default)
+            })
         {
-            this.CenterWindow(new Vector2i(1280, 768));
+            this.CenterWindow();
         }
 
         protected override void OnResize(ResizeEventArgs e)
@@ -23,79 +35,80 @@ namespace Collision_Simulation
 
         protected override void OnLoad()
         {
+
+            this.IsVisible = true;
+
+            // Background Color
             GL.ClearColor(new Color4(0.5f, 0.5f, 0.5f, 1.0f));
 
+            //pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f); ORANGE
+
+            // Triangle Coordinates
             float[] vertices = new float[]
             {
-                0.0f, 0.5f, 0f,
-                0.5f, -0.5f, 0f,
-                -0.5f, -0.5f, 0f,
+                0.0f, 0.5f, 0f, 1f, 0f, 0f, 1f,         // Vertex 0
+                0.5f, -0.5f, 0f, 0f, 1f, 0f, 1f,        // Vertex 1
+                -0.5f, -0.5f, 0f, 0f, 0f, 1f, 1f,       // Vertex 2
             };
 
 
             this.vertexBufferHandle = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StreamDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
             this.vertexArrayHandle = GL.GenVertexArray();
-            GL.BindVertexArray(vertexArrayHandle);
+            GL.BindVertexArray(this.vertexArrayHandle);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 7 * sizeof(float), 0); // Position Attribute
+            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 7 * sizeof(float), 3 * sizeof(float)); // Color Attribute
             GL.EnableVertexAttribArray(0);
+            GL.EnableVertexAttribArray(1);
 
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(0); // Unbind vertex array
 
-            string vertexShaderCode =
-                @"
-                #version 330 core
+            //------------------------------------------------------------------------------------
 
-               layout (location = 0) in vec3 aPosition;
-                
-                void main()
-                {
-                    gl_Position = vec4(aPosition, 1f);
-                }
-                ";
-
-            string pixelShaderName =
-                @"
-                #version 330 core
-
-                out vec4 pixelColor;
-
-                void main()
-                {
-                    pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f);
-                }
-                ";
-
+            // Compile Shaders
             int vertexShaderHandle = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(vertexShaderHandle, vertexShaderCode);
+            GL.ShaderSource(vertexShaderHandle, File.ReadAllText("../../../assets/vertexShader.glsl"));
             GL.CompileShader(vertexShaderHandle);
 
-            int pixelShaderHandle = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(pixelShaderHandle, pixelShaderName);
-            GL.CompileShader(pixelShaderHandle);
+            int fragmentShaderHandle = GL.CreateShader(ShaderType.FragmentShader);
+            GL.ShaderSource(fragmentShaderHandle, File.ReadAllText("../../../assets/fragmentShader.glsl"));
+            GL.CompileShader(fragmentShaderHandle);
+
+            // Output shader errors to console
+            Console.WriteLine(GL.GetShaderInfoLog(vertexShaderHandle));
+            Console.WriteLine(GL.GetShaderInfoLog(fragmentShaderHandle));
 
             this.shaderProgramHandle = GL.CreateProgram();
+
             GL.AttachShader(this.shaderProgramHandle, vertexShaderHandle);
-            GL.AttachShader(this.shaderProgramHandle, pixelShaderHandle);
+            GL.AttachShader(this.shaderProgramHandle, fragmentShaderHandle);
 
             GL.LinkProgram(this.shaderProgramHandle);
 
             GL.DetachShader(this.shaderProgramHandle, vertexShaderHandle);
-            GL.DetachShader(this.shaderProgramHandle, pixelShaderHandle);
+            GL.DetachShader(this.shaderProgramHandle, fragmentShaderHandle);
 
             GL.DeleteShader(vertexShaderHandle);
-            GL.DeleteShader(pixelShaderHandle);
+            GL.DeleteShader(fragmentShaderHandle);
+
+            // Output program errors to console
+            Console.WriteLine(GL.GetProgramInfoLog(shaderProgramHandle));
+
+
 
             base.OnLoad();
         }
 
         protected override void OnUnload()
         {
+            GL.BindVertexArray(0);
+            GL.DeleteVertexArray(this.vertexArrayHandle);
+
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.DeleteBuffer(this.vertexBufferHandle);
 
@@ -114,7 +127,7 @@ namespace Collision_Simulation
         // Initial frame render
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.Clear(ClearBufferMask.ColorBufferBit);
+            GL.Clear(ClearBufferMask.ColorBufferBit); // Clear screen
 
             GL.UseProgram(this.shaderProgramHandle);
             GL.BindVertexArray(this.vertexArrayHandle);
