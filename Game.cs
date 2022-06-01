@@ -7,7 +7,7 @@ namespace Collision_Simulation
 {
     internal class Game : GameWindow
     {
-        private int vertexBufferHandle, shaderProgramHandle, vertexArrayHandle;
+        private int vertexBufferHandle, shaderProgramHandle, vertexArrayHandle, indexBufferHandle;
 
         public Game(int width = 1280, int height = 768, String title = "Collision Simmulation") : base(
             GameWindowSettings.Default,
@@ -46,16 +46,35 @@ namespace Collision_Simulation
             // Triangle Coordinates
             float[] vertices = new float[]
             {
-                0.0f, 0.5f, 0f, 1f, 0f, 0f, 1f,         // Vertex 0
+                0.0f, 0.0f, 0f, 1f, 0f, 0f, 1f,         // Vertex 0
                 0.5f, -0.5f, 0f, 0f, 1f, 0f, 1f,        // Vertex 1
                 -0.5f, -0.5f, 0f, 0f, 0f, 1f, 1f,       // Vertex 2
+            };
+
+            // 2 Triangles to make a rectangle 
+            float[] vertices2 = new float[]
+            {
+                -0.5f, 0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,       // Vertex 0
+                0.5f, 0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,        // Vertex 1
+                0.5f, -0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,       // Vertex 2
+                -0.5f, -0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,      // Vertex 2
+            };
+
+            int[] indices = new int[]
+            {
+                0, 1, 2, 0, 2, 3
             };
 
 
             this.vertexBufferHandle = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices2.Length * sizeof(float), vertices2, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+
+            this.indexBufferHandle = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
 
             this.vertexArrayHandle = GL.GenVertexArray();
             GL.BindVertexArray(this.vertexArrayHandle);
@@ -109,6 +128,9 @@ namespace Collision_Simulation
             GL.BindVertexArray(0);
             GL.DeleteVertexArray(this.vertexArrayHandle);
 
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.DeleteBuffer(this.indexBufferHandle);
+
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.DeleteBuffer(this.vertexBufferHandle);
 
@@ -131,7 +153,8 @@ namespace Collision_Simulation
 
             GL.UseProgram(this.shaderProgramHandle);
             GL.BindVertexArray(this.vertexArrayHandle);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
+            GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, 0);
 
             this.Context.SwapBuffers();
             base.OnRenderFrame(args);

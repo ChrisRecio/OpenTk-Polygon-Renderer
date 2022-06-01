@@ -370,9 +370,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Chris-Desktop\\source\\repos\\Collision Simulation\\Collision Simulation.csproj",
-      "projectName": "Collision Simulation",
-      "projectPath": "C:\\Users\\Chris-Desktop\\source\\repos\\Collision Simulation\\Collision Simulation.csproj",
+      "projectUniqueName": "C:\\Users\\Chris-Desktop\\source\\repos\\Collision Simulation\\OpenGLFrame.csproj",
+      "projectName": "OpenGLFrame",
+      "projectPath": "C:\\Users\\Chris-Desktop\\source\\repos\\Collision Simulation\\OpenGLFrame.csproj",
       "packagesPath": "C:\\Users\\Chris-Desktop\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\Chris-Desktop\\source\\repos\\Collision Simulation\\obj\\",
       "projectStyle": "PackageReference",
