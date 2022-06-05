@@ -43,21 +43,28 @@ namespace Collision_Simulation
 
             //pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f); ORANGE
 
-            // Triangle Coordinates
-            float[] vertices = new float[]
-            {
-                0.0f, 0.0f, 0f, 1f, 0f, 0f, 1f,         // Vertex 0
-                0.5f, -0.5f, 0f, 0f, 1f, 0f, 1f,        // Vertex 1
-                -0.5f, -0.5f, 0f, 0f, 0f, 1f, 1f,       // Vertex 2
-            };
+            float x = 380f;
+            float y = 400f;
+            float w = 512f;
+            float h = 256f;
 
             // 2 Triangles to make a rectangle 
-            float[] vertices2 = new float[]
+            /*
+             * float[] vertices = new float[]
             {
-                -0.5f, 0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,       // Vertex 0
-                0.5f, 0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,        // Vertex 1
-                0.5f, -0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,       // Vertex 2
-                -0.5f, -0.5f, 0f, 1.0f, 0.5f, 0.31f, 1.0f,      // Vertex 2
+                x, y + h, 1.0f, 0.5f, 0.31f, 1.0f,          // Vertex 0
+                x + w, y + h, 1.0f, 0.5f, 0.31f, 1.0f,      // Vertex 1
+                x + w, y, 1.0f, 0.5f, 0.31f, 1.0f,          // Vertex 2
+                x, y, 1.0f, 0.5f, 0.31f, 1.0f,              // Vertex 3
+            };
+            */
+
+            VertexPositionColor[] vertices = new VertexPositionColor[]
+            {
+                new VertexPositionColor(new Vector2(x, y + h), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
+                new VertexPositionColor(new Vector2(x + w, y + h), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
+                new VertexPositionColor(new Vector2(x + w, y), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
+                new VertexPositionColor(new Vector2(x, y), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
             };
 
             int[] indices = new int[]
@@ -65,10 +72,11 @@ namespace Collision_Simulation
                 0, 1, 2, 0, 2, 3
             };
 
+            int vertexSizeInBytes = VertexPositionColor.VertexInfo.SizeInBytes;
 
             this.vertexBufferHandle = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices2.Length * sizeof(float), vertices2, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * vertexSizeInBytes, vertices, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
             this.indexBufferHandle = GL.GenBuffer();
@@ -80,10 +88,16 @@ namespace Collision_Simulation
             GL.BindVertexArray(this.vertexArrayHandle);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 7 * sizeof(float), 0); // Position Attribute
-            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 7 * sizeof(float), 3 * sizeof(float)); // Color Attribute
-            GL.EnableVertexAttribArray(0);
-            GL.EnableVertexAttribArray(1);
+
+            VertexAttribute attribute0 = VertexPositionColor.VertexInfo.VertexAttributes[0];
+            VertexAttribute attribute1 = VertexPositionColor.VertexInfo.VertexAttributes[1];
+
+
+            GL.VertexAttribPointer(attribute0.Index, attribute0.ComponentCount, VertexAttribPointerType.Float, false, vertexSizeInBytes, attribute0.Offset); // Position Attribute
+            GL.VertexAttribPointer(attribute1.Index, attribute1.ComponentCount, VertexAttribPointerType.Float, false, vertexSizeInBytes, attribute1.Offset); // Color Attribute
+
+            GL.EnableVertexAttribArray(attribute0.Index);
+            GL.EnableVertexAttribArray(attribute1.Index);
 
             GL.BindVertexArray(0); // Unbind vertex array
 
@@ -94,13 +108,26 @@ namespace Collision_Simulation
             GL.ShaderSource(vertexShaderHandle, File.ReadAllText("../../../assets/vertexShader.glsl"));
             GL.CompileShader(vertexShaderHandle);
 
+            // VertexShader Error Log
+            string vertexShaderInfo = GL.GetShaderInfoLog(vertexShaderHandle);
+            if(vertexShaderInfo != String.Empty)
+            {
+                Console.WriteLine("vertexShaderHandle Info");
+                Console.WriteLine(vertexShaderInfo);
+            }
+
+
             int fragmentShaderHandle = GL.CreateShader(ShaderType.FragmentShader);
             GL.ShaderSource(fragmentShaderHandle, File.ReadAllText("../../../assets/fragmentShader.glsl"));
             GL.CompileShader(fragmentShaderHandle);
 
-            // Output shader errors to console
-            Console.WriteLine(GL.GetShaderInfoLog(vertexShaderHandle));
-            Console.WriteLine(GL.GetShaderInfoLog(fragmentShaderHandle));
+            // FragmentShader Error Log
+            string fragmentShaderInfo = GL.GetShaderInfoLog(fragmentShaderHandle);
+            if (fragmentShaderInfo != String.Empty)
+            {
+                Console.WriteLine("fragmentShaderHandle Info");
+                Console.WriteLine(fragmentShaderInfo);
+            }
 
             this.shaderProgramHandle = GL.CreateProgram();
 
@@ -115,9 +142,21 @@ namespace Collision_Simulation
             GL.DeleteShader(vertexShaderHandle);
             GL.DeleteShader(fragmentShaderHandle);
 
-            // Output program errors to console
-            Console.WriteLine(GL.GetProgramInfoLog(shaderProgramHandle));
+            int[] viewport = new int[4]; // x, y, Width, Height
+            GL.GetInteger(GetPName.Viewport, viewport);
 
+            GL.UseProgram(this.shaderProgramHandle);
+            int viewportSizeUniformLocation = GL.GetUniformLocation(this.shaderProgramHandle, "viewportSize");
+            GL.Uniform2(viewportSizeUniformLocation, (float)viewport[2], (float)viewport[3]);
+            GL.UseProgram(0);
+
+            // ShaderProgram Error Log
+            string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgramHandle);
+            if (shaderProgramInfo != String.Empty)
+            {
+                Console.WriteLine("shaderProgramHandle Info");
+                Console.WriteLine(shaderProgramInfo);
+            }
 
 
             base.OnLoad();
