@@ -12,6 +12,8 @@ namespace Collision_Simulation
         private IndexBuffer indexBuffer;
         private VertexArray vertexArray;
 
+        private int vertexCount, indexCount;
+
         public Game(int width = 1280, int height = 768, String title = "Collision Simmulation") : base(
             GameWindowSettings.Default,
             new NativeWindowSettings()
@@ -46,23 +48,48 @@ namespace Collision_Simulation
 
             //pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f); ORANGE
 
-            float x = 380f;
-            float y = 400f;
-            float w = 512f;
-            float h = 256f;
+            Random rand = new Random();
+            int boxCount = 10;
+            int windowWidth = this.ClientSize.X;
+            int windowHeight = this.ClientSize.Y;
 
-            VertexPositionColor[] vertices = new VertexPositionColor[]
-            {
-                new VertexPositionColor(new Vector2(x, y + h), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-                new VertexPositionColor(new Vector2(x + w, y + h), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-                new VertexPositionColor(new Vector2(x + w, y), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-                new VertexPositionColor(new Vector2(x, y), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-            };
+            VertexPositionColor[] vertices = new VertexPositionColor[boxCount * 4];
+            this.vertexCount = 0;
 
-            int[] indices = new int[]
+            for(int i = 0; i < boxCount; i++)
             {
-                0, 1, 2, 0, 2, 3
-            };
+                int w = rand.Next(32, 128);
+                int h = rand.Next(32, 128);
+                int x = rand.Next(0, windowWidth - w);
+                int y = rand.Next(0, windowHeight - h);
+
+                float r = (float)rand.NextDouble();
+                float g = (float)rand.NextDouble();
+                float b = (float)rand.NextDouble();
+
+
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y + h), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y + h), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), new Color4(r, g, b, 1.0f));
+            }
+
+
+            int[] indices = new int[boxCount * 6];
+            this.indexCount = 0;
+            this.vertexCount = 0;
+
+            for (int i = 0; i < boxCount; i++)
+            {
+                indices[this.indexCount++] = 0 + this.vertexCount;
+                indices[this.indexCount++] = 1 + this.vertexCount;
+                indices[this.indexCount++] = 2 + this.vertexCount;
+                indices[this.indexCount++] = 0 + this.vertexCount;
+                indices[this.indexCount++] = 2 + this.vertexCount;
+                indices[this.indexCount++] = 3 + this.vertexCount;
+
+                this.vertexCount += 4;
+            }
 
             this.vertexBuffer = new VertexBuffer(VertexPositionColor.VertexInfo, vertices.Length, true);
             this.vertexBuffer.SetData(vertices, vertices.Length);
@@ -159,7 +186,7 @@ namespace Collision_Simulation
             GL.UseProgram(this.shaderProgramHandle);
             GL.BindVertexArray(this.vertexArray.VertexArrayHandle);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBuffer.IndexBufferHandle);
-            GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, 0);
+            GL.DrawElements(PrimitiveType.Triangles, this.indexCount, DrawElementsType.UnsignedInt, 0);
 
             this.Context.SwapBuffers();
             base.OnRenderFrame(args);
