@@ -7,12 +7,16 @@ namespace Collision_Simulation
 {
     internal class Game : GameWindow
     {
-        private int shaderProgramHandle;
         private VertexBuffer vertexBuffer;
         private IndexBuffer indexBuffer;
         private VertexArray vertexArray;
+        private ShaderProgram shaderProgram;
+
+        private string vertexShaderLocation = "../../../assets/vertexShader.glsl";
+        private string fragmentShaderLocation = "../../../assets/fragmentShader.glsl";
 
         private int vertexCount, indexCount;
+        private float colorFactor = 1f, deltaColorFactor = 1f/256f;
 
         public Game(int width = 1280, int height = 768, String title = "Collision Simmulation") : base(
             GameWindowSettings.Default,
@@ -49,7 +53,7 @@ namespace Collision_Simulation
             //pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f); ORANGE
 
             Random rand = new Random();
-            int boxCount = 10;
+            int boxCount = 100;
             int windowWidth = this.ClientSize.X;
             int windowHeight = this.ClientSize.Y;
 
@@ -99,57 +103,17 @@ namespace Collision_Simulation
 
             this.vertexArray = new VertexArray(this.vertexBuffer);
 
-            //------------------------------------------------------------------------------------
-
-            // Compile Shaders
-            int vertexShaderHandle = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(vertexShaderHandle, File.ReadAllText("../../../assets/vertexShader.glsl"));
-            GL.CompileShader(vertexShaderHandle);
-
-            // VertexShader Error Log
-            string vertexShaderInfo = GL.GetShaderInfoLog(vertexShaderHandle);
-            if(vertexShaderInfo != String.Empty)
-            {
-                Console.WriteLine("vertexShaderHandle Info");
-                Console.WriteLine(vertexShaderInfo);
-            }
-
-
-            int fragmentShaderHandle = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShaderHandle, File.ReadAllText("../../../assets/fragmentShader.glsl"));
-            GL.CompileShader(fragmentShaderHandle);
-
-            // FragmentShader Error Log
-            string fragmentShaderInfo = GL.GetShaderInfoLog(fragmentShaderHandle);
-            if (fragmentShaderInfo != String.Empty)
-            {
-                Console.WriteLine("fragmentShaderHandle Info");
-                Console.WriteLine(fragmentShaderInfo);
-            }
-
-            this.shaderProgramHandle = GL.CreateProgram();
-
-            GL.AttachShader(this.shaderProgramHandle, vertexShaderHandle);
-            GL.AttachShader(this.shaderProgramHandle, fragmentShaderHandle);
-
-            GL.LinkProgram(this.shaderProgramHandle);
-
-            GL.DetachShader(this.shaderProgramHandle, vertexShaderHandle);
-            GL.DetachShader(this.shaderProgramHandle, fragmentShaderHandle);
-
-            GL.DeleteShader(vertexShaderHandle);
-            GL.DeleteShader(fragmentShaderHandle);
+            this.shaderProgram = new ShaderProgram(vertexShaderLocation, fragmentShaderLocation);
 
             int[] viewport = new int[4]; // x, y, Width, Height
             GL.GetInteger(GetPName.Viewport, viewport);
 
-            GL.UseProgram(this.shaderProgramHandle);
-            int viewportSizeUniformLocation = GL.GetUniformLocation(this.shaderProgramHandle, "viewportSize");
-            GL.Uniform2(viewportSizeUniformLocation, (float)viewport[2], (float)viewport[3]);
-            GL.UseProgram(0);
+
+            this.shaderProgram.setUniform("viewportSize", (float)viewport[2], (float)viewport[3]);
+            this.shaderProgram.setUniform("colorFactor", this.colorFactor);
 
             // ShaderProgram Error Log
-            string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgramHandle);
+            string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgram.ShaderProgramHandle);
             if (shaderProgramInfo != String.Empty)
             {
                 Console.WriteLine("shaderProgramHandle Info");
@@ -165,9 +129,7 @@ namespace Collision_Simulation
             this.vertexBuffer?.Dispose();
             this.indexBuffer?.Dispose();
             this.vertexArray?.Dispose();
-
-            GL.UseProgram(0);
-            GL.DeleteProgram(this.shaderProgramHandle);
+            this.shaderProgram?.Dispose();
 
             base.OnUnload();
         }
@@ -175,6 +137,22 @@ namespace Collision_Simulation
         // Called per frame update
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
+            this.colorFactor += this.deltaColorFactor;
+
+            if(this.colorFactor >= 1f)
+            {
+                this.colorFactor = 1f;
+                this.deltaColorFactor *= -1f;
+            }
+
+            if (this.colorFactor <= 0f)
+            {
+                this.colorFactor = 0f;
+                this.deltaColorFactor *= -1f;
+            }
+
+            this.shaderProgram.setUniform("colorFactor", colorFactor);
+
             base.OnUpdateFrame(args);
         }
 
@@ -183,7 +161,7 @@ namespace Collision_Simulation
         {
             GL.Clear(ClearBufferMask.ColorBufferBit); // Clear screen
 
-            GL.UseProgram(this.shaderProgramHandle);
+            GL.UseProgram(this.shaderProgram.ShaderProgramHandle);
             GL.BindVertexArray(this.vertexArray.VertexArrayHandle);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBuffer.IndexBufferHandle);
             GL.DrawElements(PrimitiveType.Triangles, this.indexCount, DrawElementsType.UnsignedInt, 0);
