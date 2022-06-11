@@ -13,6 +13,7 @@ namespace Collision_Simulation
         private ShaderProgram shaderProgram;
 
         private string vertexShaderLocation = "../../../assets/vertexShader.glsl";
+        private string circleVertexShaderLocation = "../../../assets/circleVertexShaderLocation.glsl";
         private string fragmentShaderLocation = "../../../assets/fragmentShader.glsl";
 
         private int vertexCount, indexCount;
@@ -53,33 +54,44 @@ namespace Collision_Simulation
             //pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f); ORANGE
 
             Random rand = new Random();
-            int boxCount = 100;
+            int boxCount = 10;
             int windowWidth = this.ClientSize.X;
             int windowHeight = this.ClientSize.Y;
 
-            VertexPositionColor[] vertices = new VertexPositionColor[boxCount * 4];
+            VertexPositionColor[] vertices = new VertexPositionColor[boxCount * 8];
             this.vertexCount = 0;
 
             for(int i = 0; i < boxCount; i++)
             {
-                int w = rand.Next(32, 128);
-                int h = rand.Next(32, 128);
-                int x = rand.Next(0, windowWidth - w);
+                //int w = rand.Next(32, 128);
+                //int h = rand.Next(32, 128);
+                //int x = rand.Next(0, windowWidth - w);
+                //int y = rand.Next(0, windowHeight - h);
+
+                int w = 32;
+                int h = 64;
+                int x = rand.Next(0, windowWidth - (2 * w));
                 int y = rand.Next(0, windowHeight - h);
+                // Center of window
+                //int x = (windowWidth / 2);
+                //int y = (windowHeight / 2);
 
                 float r = (float)rand.NextDouble();
                 float g = (float)rand.NextDouble();
                 float b = (float)rand.NextDouble();
 
 
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y + h), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y + h), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y), new Color4(r, g, b, 1.0f));
                 vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y - h), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x - w, y - h), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x - (2 * w), y), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x - w, y + h), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y + h), new Color4(r, g, b, 1.0f));
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + (2 * w), y), new Color4(r, g, b, 1.0f));
             }
 
 
-            int[] indices = new int[boxCount * 6];
+            int[] indices = new int[boxCount * 18];
             this.indexCount = 0;
             this.vertexCount = 0;
 
@@ -88,12 +100,31 @@ namespace Collision_Simulation
                 indices[this.indexCount++] = 0 + this.vertexCount;
                 indices[this.indexCount++] = 1 + this.vertexCount;
                 indices[this.indexCount++] = 2 + this.vertexCount;
+
                 indices[this.indexCount++] = 0 + this.vertexCount;
                 indices[this.indexCount++] = 2 + this.vertexCount;
                 indices[this.indexCount++] = 3 + this.vertexCount;
 
-                this.vertexCount += 4;
+                indices[this.indexCount++] = 0 + this.vertexCount;
+                indices[this.indexCount++] = 3 + this.vertexCount;
+                indices[this.indexCount++] = 4 + this.vertexCount;
+
+                indices[this.indexCount++] = 0 + this.vertexCount;
+                indices[this.indexCount++] = 4 + this.vertexCount;
+                indices[this.indexCount++] = 5 + this.vertexCount;
+
+                indices[this.indexCount++] = 0 + this.vertexCount;
+                indices[this.indexCount++] = 5 + this.vertexCount;
+                indices[this.indexCount++] = 6 + this.vertexCount;
+
+                indices[this.indexCount++] = 0 + this.vertexCount;
+                indices[this.indexCount++] = 6 + this.vertexCount;
+                indices[this.indexCount++] = 1 + this.vertexCount;
+
+                this.vertexCount += 7;
             }
+
+            
 
             this.vertexBuffer = new VertexBuffer(VertexPositionColor.VertexInfo, vertices.Length, true);
             this.vertexBuffer.SetData(vertices, vertices.Length);
@@ -101,9 +132,13 @@ namespace Collision_Simulation
             this.indexBuffer = new IndexBuffer(indices.Length, true);
             this.indexBuffer.SetData(indices, indices.Length);
 
+            
+
             this.vertexArray = new VertexArray(this.vertexBuffer);
 
             this.shaderProgram = new ShaderProgram(vertexShaderLocation, fragmentShaderLocation);
+
+            
 
             int[] viewport = new int[4]; // x, y, Width, Height
             GL.GetInteger(GetPName.Viewport, viewport);
@@ -111,6 +146,8 @@ namespace Collision_Simulation
 
             this.shaderProgram.setUniform("viewportSize", (float)viewport[2], (float)viewport[3]);
             this.shaderProgram.setUniform("colorFactor", this.colorFactor);
+
+            
 
             // ShaderProgram Error Log
             string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgram.ShaderProgramHandle);
@@ -120,6 +157,7 @@ namespace Collision_Simulation
                 Console.WriteLine(shaderProgramInfo);
             }
 
+            
 
             base.OnLoad();
         }
@@ -137,6 +175,8 @@ namespace Collision_Simulation
         // Called per frame update
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
+
+            
             this.colorFactor += this.deltaColorFactor;
 
             if(this.colorFactor >= 1f)
@@ -152,6 +192,8 @@ namespace Collision_Simulation
             }
 
             this.shaderProgram.setUniform("colorFactor", colorFactor);
+
+            
 
             base.OnUpdateFrame(args);
         }
