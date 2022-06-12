@@ -7,14 +7,13 @@ namespace Collision_Simulation
 {
     internal class Game : GameWindow
     {
-        private VertexBuffer vertexBuffer;
-        private IndexBuffer indexBuffer;
-        private VertexArray vertexArray;
-        private ShaderProgram shaderProgram;
+        private VertexBuffer vertexBuffer = default!;
+        private IndexBuffer indexBuffer = default!;
+        private VertexArray vertexArray = default!;
+        private ShaderProgram shaderProgram = default!;
 
-        private string vertexShaderLocation = "../../../assets/vertexShader.glsl";
-        private string circleVertexShaderLocation = "../../../assets/circleVertexShaderLocation.glsl";
-        private string fragmentShaderLocation = "../../../assets/fragmentShader.glsl";
+        private readonly string vertexShaderLocation = "../../../assets/vertexShader.glsl";
+        private readonly string fragmentShaderLocation = "../../../assets/fragmentShader.glsl";
 
         private int vertexCount, indexCount;
         private float colorFactor = 1f, deltaColorFactor = 1f/256f;
@@ -58,10 +57,12 @@ namespace Collision_Simulation
             int windowWidth = this.ClientSize.X;
             int windowHeight = this.ClientSize.Y;
 
-            VertexPositionColor[] vertices = new VertexPositionColor[boxCount * 8];
+            VertexPositionColor[] vertices = new VertexPositionColor[boxCount * 7];
             this.vertexCount = 0;
 
-            for(int i = 0; i < boxCount; i++)
+            DrawTriangleFan(20, windowWidth / 2, windowHeight / 2, 100, new Color4(1.0f, 0.5f, 0.31f, 1.0f));
+
+            for (int i = 0; i < boxCount; i++)
             {
                 //int w = rand.Next(32, 128);
                 //int h = rand.Next(32, 128);
@@ -212,5 +213,21 @@ namespace Collision_Simulation
             base.OnRenderFrame(args);
         }
 
+        // Draws a triangle fan with n triangles
+        private void DrawTriangleFan(int n, int xPos, int yPos, float radius, Color4 color)
+        {
+            double twicePi = 2 * Math.PI;
+
+            VertexPositionColor[] vertices = new VertexPositionColor[1 * (n + 1)]; // # of items to draw * n + 1
+            this.vertexCount = 0;
+
+            for(int i = 0; i < (n + 1); i++)
+            {
+                float x = (float)(xPos + (radius * Math.Cos(i * twicePi / n)));
+                float y = (float)(yPos + (radius * Math.Sin(i * twicePi / n)));
+
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), color);
+            }
+        }
     }
 }
