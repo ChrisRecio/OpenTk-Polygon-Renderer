@@ -18,6 +18,9 @@ namespace Collision_Simulation
         private int vertexCount, indexCount;
         private float colorFactor = 1f, deltaColorFactor = 1f/256f;
 
+        private readonly Color4 backgroundColor = new Color4(0.5f, 0.5f, 0.5f, 1.0f);
+        private readonly Color4 orange = new Color4(1.0f, 0.5f, 0.31f, 1.0f);
+        
         public Game(int width = 1280, int height = 768, String title = "Collision Simmulation") : base(
             GameWindowSettings.Default,
             new NativeWindowSettings()
@@ -47,85 +50,69 @@ namespace Collision_Simulation
 
             this.IsVisible = true;
 
-            // Background Color
-            GL.ClearColor(new Color4(0.5f, 0.5f, 0.5f, 1.0f));
+            // Set Background Color
+            GL.ClearColor(backgroundColor);
 
-            //pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f); ORANGE
 
             Random rand = new Random();
-            int boxCount = 10;
+            double twicePi = 2 * Math.PI;
             int windowWidth = this.ClientSize.X;
             int windowHeight = this.ClientSize.Y;
 
-            VertexPositionColor[] vertices = new VertexPositionColor[boxCount * 7];
+            int nTriangles = 20; // Triangles per polyogn (n >= 3)
+            int polygonCount = 10; // How many polygons will be rendered
+
+            VertexPositionColor[] vertices = new VertexPositionColor[polygonCount * (nTriangles + 1)]; // polygonCount * nTriangles + 1
             this.vertexCount = 0;
 
-            DrawTriangleFan(20, windowWidth / 2, windowHeight / 2, 100, new Color4(1.0f, 0.5f, 0.31f, 1.0f));
-
-            for (int i = 0; i < boxCount; i++)
+            for(int i = 0; i < polygonCount; i++)
             {
-                //int w = rand.Next(32, 128);
-                //int h = rand.Next(32, 128);
-                //int x = rand.Next(0, windowWidth - w);
-                //int y = rand.Next(0, windowHeight - h);
-
-                int w = 32;
-                int h = 64;
-                int x = rand.Next(0, windowWidth - (2 * w));
-                int y = rand.Next(0, windowHeight - h);
-                // Center of window
-                //int x = (windowWidth / 2);
-                //int y = (windowHeight / 2);
+                int radius = rand.Next(25, 50);
+                int posX = rand.Next(radius, windowWidth - radius);
+                int posY = rand.Next(radius, windowHeight - radius);
 
                 float r = (float)rand.NextDouble();
                 float g = (float)rand.NextDouble();
                 float b = (float)rand.NextDouble();
 
+                for(int j = 0; j < (nTriangles + 1); j++)
+                {
+                    float x = (float)(posX + (radius * Math.Cos(j * twicePi / nTriangles)));
+                    float y = (float)(posY + (radius * Math.Sin(j * twicePi / nTriangles)));
 
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y - h), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x - w, y - h), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x - (2 * w), y), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x - w, y + h), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y + h), new Color4(r, g, b, 1.0f));
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + (2 * w), y), new Color4(r, g, b, 1.0f));
+                    vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), new Color4(r, g, b, 1.0f));
+                }
             }
 
-
-            int[] indices = new int[boxCount * 18];
+            int[] indices = new int[polygonCount * (nTriangles * 3 )];
             this.indexCount = 0;
             this.vertexCount = 0;
 
-            for (int i = 0; i < boxCount; i++)
+            for (int i = 0; i < polygonCount; i++)
             {
-                indices[this.indexCount++] = 0 + this.vertexCount;
-                indices[this.indexCount++] = 1 + this.vertexCount;
-                indices[this.indexCount++] = 2 + this.vertexCount;
 
-                indices[this.indexCount++] = 0 + this.vertexCount;
-                indices[this.indexCount++] = 2 + this.vertexCount;
-                indices[this.indexCount++] = 3 + this.vertexCount;
-
-                indices[this.indexCount++] = 0 + this.vertexCount;
-                indices[this.indexCount++] = 3 + this.vertexCount;
-                indices[this.indexCount++] = 4 + this.vertexCount;
-
-                indices[this.indexCount++] = 0 + this.vertexCount;
-                indices[this.indexCount++] = 4 + this.vertexCount;
-                indices[this.indexCount++] = 5 + this.vertexCount;
-
-                indices[this.indexCount++] = 0 + this.vertexCount;
-                indices[this.indexCount++] = 5 + this.vertexCount;
-                indices[this.indexCount++] = 6 + this.vertexCount;
-
-                indices[this.indexCount++] = 0 + this.vertexCount;
-                indices[this.indexCount++] = 6 + this.vertexCount;
-                indices[this.indexCount++] = 1 + this.vertexCount;
-
-                this.vertexCount += 7;
+                for(int x = 0; x < nTriangles ; x++)
+                {
+                    if(x == nTriangles - 1)
+                    {
+                        indices[this.indexCount++] = 0 + this.vertexCount;
+                        indices[this.indexCount++] = x+1 + this.vertexCount;
+                        indices[this.indexCount++] = 1 + this.vertexCount;
+                    }
+                    else
+                    {
+                        indices[this.indexCount++] = 0 + this.vertexCount;
+                        indices[this.indexCount++] = x+1 + this.vertexCount;
+                        indices[this.indexCount++] = x+2 + this.vertexCount;
+                    }
+                    
+                }
+                this.vertexCount += nTriangles + 1;
             }
 
-            
+            // -------------------------------------------------------------------------------------------------------------------
+
+
 
             this.vertexBuffer = new VertexBuffer(VertexPositionColor.VertexInfo, vertices.Length, true);
             this.vertexBuffer.SetData(vertices, vertices.Length);
@@ -175,9 +162,7 @@ namespace Collision_Simulation
 
         // Called per frame update
         protected override void OnUpdateFrame(FrameEventArgs args)
-        {
-
-            
+        {  
             this.colorFactor += this.deltaColorFactor;
 
             if(this.colorFactor >= 1f)
@@ -193,8 +178,6 @@ namespace Collision_Simulation
             }
 
             this.shaderProgram.setUniform("colorFactor", colorFactor);
-
-            
 
             base.OnUpdateFrame(args);
         }

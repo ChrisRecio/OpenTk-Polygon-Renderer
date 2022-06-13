@@ -126,6 +126,40 @@ namespace Collision_Simulation
             GL.UseProgram(0);
         }
 
+        public void setUniform(string name, float v1, float v2, float v3)
+        {
+            if (!this.GetShaderUniform(name, out ShaderUniform uniform))
+            {
+                throw new ArgumentException("Name was not found.");
+            }
+
+            if (uniform.Type != ActiveUniformType.FloatVec3)
+            {
+                throw new ArgumentException("Uniform type is not a FloatVec3.");
+            }
+
+            GL.UseProgram(this.ShaderProgramHandle);
+            GL.Uniform3(uniform.Location, v1, v2, v3);
+            GL.UseProgram(0);
+        }
+
+        public void setUniform(string name, float v1, float v2, float v3, float v4)
+        {
+            if (!this.GetShaderUniform(name, out ShaderUniform uniform))
+            {
+                throw new ArgumentException("Name was not found.");
+            }
+
+            if (uniform.Type != ActiveUniformType.FloatVec4)
+            {
+                throw new ArgumentException("Uniform type is not a FloatVec4.");
+            }
+
+            GL.UseProgram(this.ShaderProgramHandle);
+            GL.Uniform4(uniform.Location, v1, v2, v3, v4);
+            GL.UseProgram(0);
+        }
+
         public ShaderAttribute[] GetAttributeList()
         {
             ShaderAttribute[] result = new ShaderAttribute[this.attributes.Length];
