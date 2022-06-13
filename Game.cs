@@ -7,8 +7,20 @@ namespace Collision_Simulation
 {
     internal class Game : GameWindow
     {
-        private int vertexBufferHandle, shaderProgramHandle, vertexArrayHandle, indexBufferHandle;
+        private VertexBuffer vertexBuffer = default!;
+        private IndexBuffer indexBuffer = default!;
+        private VertexArray vertexArray = default!;
+        private ShaderProgram shaderProgram = default!;
 
+        private readonly string vertexShaderLocation = "../../../assets/vertexShader.glsl";
+        private readonly string fragmentShaderLocation = "../../../assets/fragmentShader.glsl";
+
+        private int vertexCount, indexCount;
+        private float colorFactor = 1f, deltaColorFactor = 1f/256f;
+
+        private readonly Color4 backgroundColor = new Color4(0.5f, 0.5f, 0.5f, 1.0f);
+        private readonly Color4 orange = new Color4(1.0f, 0.5f, 0.31f, 1.0f);
+        
         public Game(int width = 1280, int height = 768, String title = "Collision Simmulation") : base(
             GameWindowSettings.Default,
             new NativeWindowSettings()
@@ -38,150 +50,135 @@ namespace Collision_Simulation
 
             this.IsVisible = true;
 
-            // Background Color
-            GL.ClearColor(new Color4(0.5f, 0.5f, 0.5f, 1.0f));
+            // Set Background Color
+            GL.ClearColor(backgroundColor);
 
-            //pixelColor = vec4(1.0f, 0.5f, 0.31f, 1.0f); ORANGE
 
-            float x = 380f;
-            float y = 400f;
-            float w = 512f;
-            float h = 256f;
+            Random rand = new Random();
+            double twicePi = 2 * Math.PI;
+            int windowWidth = this.ClientSize.X;
+            int windowHeight = this.ClientSize.Y;
 
-            // 2 Triangles to make a rectangle 
-            /*
-             * float[] vertices = new float[]
+            int nTriangles = 20; // Triangles per polyogn (n >= 3)
+            int polygonCount = 10; // How many polygons will be rendered
+
+            VertexPositionColor[] vertices = new VertexPositionColor[polygonCount * (nTriangles + 1)]; // polygonCount * nTriangles + 1
+            this.vertexCount = 0;
+
+            for(int i = 0; i < polygonCount; i++)
             {
-                x, y + h, 1.0f, 0.5f, 0.31f, 1.0f,          // Vertex 0
-                x + w, y + h, 1.0f, 0.5f, 0.31f, 1.0f,      // Vertex 1
-                x + w, y, 1.0f, 0.5f, 0.31f, 1.0f,          // Vertex 2
-                x, y, 1.0f, 0.5f, 0.31f, 1.0f,              // Vertex 3
-            };
-            */
+                int radius = rand.Next(25, 50);
+                int posX = rand.Next(radius, windowWidth - radius);
+                int posY = rand.Next(radius, windowHeight - radius);
 
-            VertexPositionColor[] vertices = new VertexPositionColor[]
-            {
-                new VertexPositionColor(new Vector2(x, y + h), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-                new VertexPositionColor(new Vector2(x + w, y + h), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-                new VertexPositionColor(new Vector2(x + w, y), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-                new VertexPositionColor(new Vector2(x, y), new Color4(1.0f, 0.5f, 0.31f, 1.0f)),
-            };
+                float r = (float)rand.NextDouble();
+                float g = (float)rand.NextDouble();
+                float b = (float)rand.NextDouble();
 
-            int[] indices = new int[]
-            {
-                0, 1, 2, 0, 2, 3
-            };
+                for(int j = 0; j < (nTriangles + 1); j++)
+                {
+                    float x = (float)(posX + (radius * Math.Cos(j * twicePi / nTriangles)));
+                    float y = (float)(posY + (radius * Math.Sin(j * twicePi / nTriangles)));
 
-            int vertexSizeInBytes = VertexPositionColor.VertexInfo.SizeInBytes;
-
-            this.vertexBufferHandle = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * vertexSizeInBytes, vertices, BufferUsageHint.StaticDraw);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-
-            this.indexBufferHandle = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsageHint.StaticDraw);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-
-            this.vertexArrayHandle = GL.GenVertexArray();
-            GL.BindVertexArray(this.vertexArrayHandle);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-
-            VertexAttribute attribute0 = VertexPositionColor.VertexInfo.VertexAttributes[0];
-            VertexAttribute attribute1 = VertexPositionColor.VertexInfo.VertexAttributes[1];
-
-
-            GL.VertexAttribPointer(attribute0.Index, attribute0.ComponentCount, VertexAttribPointerType.Float, false, vertexSizeInBytes, attribute0.Offset); // Position Attribute
-            GL.VertexAttribPointer(attribute1.Index, attribute1.ComponentCount, VertexAttribPointerType.Float, false, vertexSizeInBytes, attribute1.Offset); // Color Attribute
-
-            GL.EnableVertexAttribArray(attribute0.Index);
-            GL.EnableVertexAttribArray(attribute1.Index);
-
-            GL.BindVertexArray(0); // Unbind vertex array
-
-            //------------------------------------------------------------------------------------
-
-            // Compile Shaders
-            int vertexShaderHandle = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(vertexShaderHandle, File.ReadAllText("../../../assets/vertexShader.glsl"));
-            GL.CompileShader(vertexShaderHandle);
-
-            // VertexShader Error Log
-            string vertexShaderInfo = GL.GetShaderInfoLog(vertexShaderHandle);
-            if(vertexShaderInfo != String.Empty)
-            {
-                Console.WriteLine("vertexShaderHandle Info");
-                Console.WriteLine(vertexShaderInfo);
+                    vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), new Color4(r, g, b, 1.0f));
+                }
             }
 
+            int[] indices = new int[polygonCount * (nTriangles * 3 )];
+            this.indexCount = 0;
+            this.vertexCount = 0;
 
-            int fragmentShaderHandle = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShaderHandle, File.ReadAllText("../../../assets/fragmentShader.glsl"));
-            GL.CompileShader(fragmentShaderHandle);
-
-            // FragmentShader Error Log
-            string fragmentShaderInfo = GL.GetShaderInfoLog(fragmentShaderHandle);
-            if (fragmentShaderInfo != String.Empty)
+            for (int i = 0; i < polygonCount; i++)
             {
-                Console.WriteLine("fragmentShaderHandle Info");
-                Console.WriteLine(fragmentShaderInfo);
+
+                for(int x = 0; x < nTriangles ; x++)
+                {
+                    if(x == nTriangles - 1)
+                    {
+                        indices[this.indexCount++] = 0 + this.vertexCount;
+                        indices[this.indexCount++] = x+1 + this.vertexCount;
+                        indices[this.indexCount++] = 1 + this.vertexCount;
+                    }
+                    else
+                    {
+                        indices[this.indexCount++] = 0 + this.vertexCount;
+                        indices[this.indexCount++] = x+1 + this.vertexCount;
+                        indices[this.indexCount++] = x+2 + this.vertexCount;
+                    }
+                    
+                }
+                this.vertexCount += nTriangles + 1;
             }
 
-            this.shaderProgramHandle = GL.CreateProgram();
+            // -------------------------------------------------------------------------------------------------------------------
 
-            GL.AttachShader(this.shaderProgramHandle, vertexShaderHandle);
-            GL.AttachShader(this.shaderProgramHandle, fragmentShaderHandle);
 
-            GL.LinkProgram(this.shaderProgramHandle);
 
-            GL.DetachShader(this.shaderProgramHandle, vertexShaderHandle);
-            GL.DetachShader(this.shaderProgramHandle, fragmentShaderHandle);
+            this.vertexBuffer = new VertexBuffer(VertexPositionColor.VertexInfo, vertices.Length, true);
+            this.vertexBuffer.SetData(vertices, vertices.Length);
 
-            GL.DeleteShader(vertexShaderHandle);
-            GL.DeleteShader(fragmentShaderHandle);
+            this.indexBuffer = new IndexBuffer(indices.Length, true);
+            this.indexBuffer.SetData(indices, indices.Length);
+
+            
+
+            this.vertexArray = new VertexArray(this.vertexBuffer);
+
+            this.shaderProgram = new ShaderProgram(vertexShaderLocation, fragmentShaderLocation);
+
+            
 
             int[] viewport = new int[4]; // x, y, Width, Height
             GL.GetInteger(GetPName.Viewport, viewport);
 
-            GL.UseProgram(this.shaderProgramHandle);
-            int viewportSizeUniformLocation = GL.GetUniformLocation(this.shaderProgramHandle, "viewportSize");
-            GL.Uniform2(viewportSizeUniformLocation, (float)viewport[2], (float)viewport[3]);
-            GL.UseProgram(0);
+
+            this.shaderProgram.setUniform("viewportSize", (float)viewport[2], (float)viewport[3]);
+            this.shaderProgram.setUniform("colorFactor", this.colorFactor);
+
+            
 
             // ShaderProgram Error Log
-            string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgramHandle);
+            string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgram.ShaderProgramHandle);
             if (shaderProgramInfo != String.Empty)
             {
                 Console.WriteLine("shaderProgramHandle Info");
                 Console.WriteLine(shaderProgramInfo);
             }
 
+            
 
             base.OnLoad();
         }
 
         protected override void OnUnload()
         {
-            GL.BindVertexArray(0);
-            GL.DeleteVertexArray(this.vertexArrayHandle);
-
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-            GL.DeleteBuffer(this.indexBufferHandle);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.DeleteBuffer(this.vertexBufferHandle);
-
-            GL.UseProgram(0);
-            GL.DeleteProgram(this.shaderProgramHandle);
+            this.vertexBuffer?.Dispose();
+            this.indexBuffer?.Dispose();
+            this.vertexArray?.Dispose();
+            this.shaderProgram?.Dispose();
 
             base.OnUnload();
         }
 
         // Called per frame update
         protected override void OnUpdateFrame(FrameEventArgs args)
-        {
+        {  
+            this.colorFactor += this.deltaColorFactor;
+
+            if(this.colorFactor >= 1f)
+            {
+                this.colorFactor = 1f;
+                this.deltaColorFactor *= -1f;
+            }
+
+            if (this.colorFactor <= 0f)
+            {
+                this.colorFactor = 0f;
+                this.deltaColorFactor *= -1f;
+            }
+
+            this.shaderProgram.setUniform("colorFactor", colorFactor);
+
             base.OnUpdateFrame(args);
         }
 
@@ -190,14 +187,30 @@ namespace Collision_Simulation
         {
             GL.Clear(ClearBufferMask.ColorBufferBit); // Clear screen
 
-            GL.UseProgram(this.shaderProgramHandle);
-            GL.BindVertexArray(this.vertexArrayHandle);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
-            GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, 0);
+            GL.UseProgram(this.shaderProgram.ShaderProgramHandle);
+            GL.BindVertexArray(this.vertexArray.VertexArrayHandle);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBuffer.IndexBufferHandle);
+            GL.DrawElements(PrimitiveType.Triangles, this.indexCount, DrawElementsType.UnsignedInt, 0);
 
             this.Context.SwapBuffers();
             base.OnRenderFrame(args);
         }
 
+        // Draws a triangle fan with n triangles
+        private void DrawTriangleFan(int n, int xPos, int yPos, float radius, Color4 color)
+        {
+            double twicePi = 2 * Math.PI;
+
+            VertexPositionColor[] vertices = new VertexPositionColor[1 * (n + 1)]; // # of items to draw * n + 1
+            this.vertexCount = 0;
+
+            for(int i = 0; i < (n + 1); i++)
+            {
+                float x = (float)(xPos + (radius * Math.Cos(i * twicePi / n)));
+                float y = (float)(yPos + (radius * Math.Sin(i * twicePi / n)));
+
+                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), color);
+            }
+        }
     }
 }
