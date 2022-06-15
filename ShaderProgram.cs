@@ -170,7 +170,7 @@ namespace Collision_Simulation
 
             if (uniform.Type != ActiveUniformType.FloatMat4)
             {
-                throw new ArgumentException("Uniform type is not a FloatVec2.");
+                throw new ArgumentException("Uniform type is not a Matrix4.");
             }
 
             GL.UseProgram(this.ShaderProgramHandle);
