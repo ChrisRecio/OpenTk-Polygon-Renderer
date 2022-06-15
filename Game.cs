@@ -47,12 +47,8 @@ namespace Collision_Simulation
 
         protected override void OnLoad()
         {
-
             this.IsVisible = true;
-
-            // Set Background Color
-            GL.ClearColor(backgroundColor);
-
+            GL.ClearColor(backgroundColor); // Set Background Color
 
             Random rand = new Random();
             double twicePi = 2 * Math.PI;
@@ -110,32 +106,21 @@ namespace Collision_Simulation
                 this.vertexCount += nTriangles + 1;
             }
 
-            // -------------------------------------------------------------------------------------------------------------------
-
-
-
             this.vertexBuffer = new VertexBuffer(VertexPositionColor.VertexInfo, vertices.Length, true);
             this.vertexBuffer.SetData(vertices, vertices.Length);
 
             this.indexBuffer = new IndexBuffer(indices.Length, true);
             this.indexBuffer.SetData(indices, indices.Length);
 
-            
-
             this.vertexArray = new VertexArray(this.vertexBuffer);
 
             this.shaderProgram = new ShaderProgram(vertexShaderLocation, fragmentShaderLocation);
 
-            
-
             int[] viewport = new int[4]; // x, y, Width, Height
             GL.GetInteger(GetPName.Viewport, viewport);
 
-
             this.shaderProgram.setUniform("viewportSize", (float)viewport[2], (float)viewport[3]);
             this.shaderProgram.setUniform("colorFactor", this.colorFactor);
-
-            
 
             // ShaderProgram Error Log
             string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgram.ShaderProgramHandle);
@@ -144,8 +129,6 @@ namespace Collision_Simulation
                 Console.WriteLine("shaderProgramHandle Info");
                 Console.WriteLine(shaderProgramInfo);
             }
-
-            
 
             base.OnLoad();
         }
@@ -178,6 +161,9 @@ namespace Collision_Simulation
             }
 
             this.shaderProgram.setUniform("colorFactor", colorFactor);
+            // TODO
+            // loop through array of triangle fans
+            // this.shaderProgram.setUniformMatrix("transformationMatrix", array[i].createTransformMatrix());
 
             base.OnUpdateFrame(args);
         }
@@ -194,23 +180,6 @@ namespace Collision_Simulation
 
             this.Context.SwapBuffers();
             base.OnRenderFrame(args);
-        }
-
-        // Draws a triangle fan with n triangles
-        private void DrawTriangleFan(int n, int xPos, int yPos, float radius, Color4 color)
-        {
-            double twicePi = 2 * Math.PI;
-
-            VertexPositionColor[] vertices = new VertexPositionColor[1 * (n + 1)]; // # of items to draw * n + 1
-            this.vertexCount = 0;
-
-            for(int i = 0; i < (n + 1); i++)
-            {
-                float x = (float)(xPos + (radius * Math.Cos(i * twicePi / n)));
-                float y = (float)(yPos + (radius * Math.Sin(i * twicePi / n)));
-
-                vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), color);
-            }
         }
     }
 }

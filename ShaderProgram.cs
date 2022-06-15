@@ -1,4 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace Collision_Simulation
 {
@@ -157,6 +158,23 @@ namespace Collision_Simulation
 
             GL.UseProgram(this.ShaderProgramHandle);
             GL.Uniform4(uniform.Location, v1, v2, v3, v4);
+            GL.UseProgram(0);
+        }
+
+        public void setUniformMatrix(string name, Matrix4 value, bool transpose)
+        {
+            if (!this.GetShaderUniform(name, out ShaderUniform uniform))
+            {
+                throw new ArgumentException("Name was not found.");
+            }
+
+            if (uniform.Type != ActiveUniformType.FloatMat4)
+            {
+                throw new ArgumentException("Uniform type is not a FloatVec2.");
+            }
+
+            GL.UseProgram(this.ShaderProgramHandle);
+            GL.UniformMatrix4(uniform.Location, transpose, ref value);
             GL.UseProgram(0);
         }
 
