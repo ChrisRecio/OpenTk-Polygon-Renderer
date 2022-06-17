@@ -2,6 +2,7 @@
 using OpenTK.Windowing.Desktop;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using Collision_Simulation.shapes;
 
 namespace Collision_Simulation
 {
@@ -56,35 +57,43 @@ namespace Collision_Simulation
             int windowHeight = this.ClientSize.Y;
 
             int nTriangles = 20; // Triangles per polyogn (n >= 3)
-            int polygonCount = 10; // How many polygons will be rendered
+            int polygonCount = 20; // How many polygons will be rendered
+            TriangleFan[] objects = new TriangleFan[polygonCount];
 
-            VertexPositionColor[] vertices = new VertexPositionColor[polygonCount * (nTriangles + 1)]; // polygonCount * nTriangles + 1
-            this.vertexCount = 0;
 
-            for(int i = 0; i < polygonCount; i++)
+            for(int i = 0; i < objects.Length; i++)
             {
-                int radius = rand.Next(25, 50);
+                int radius = rand.Next(50, 100);
                 int posX = rand.Next(radius, windowWidth - radius);
                 int posY = rand.Next(radius, windowHeight - radius);
-
                 float r = (float)rand.NextDouble();
                 float g = (float)rand.NextDouble();
                 float b = (float)rand.NextDouble();
 
+                objects[i] = new TriangleFan(nTriangles, radius, new Vector2(posX, posY), 1.0f, 1.0f, new Color4(r, g, b, 1.0f));
+            }
+
+
+
+            VertexPositionColor[] vertices = new VertexPositionColor[objects.Length * (nTriangles + 1)]; // objects.Length * nTriangles + 1
+            this.vertexCount = 0;
+
+            for(int i = 0; i < objects.Length; i++)
+            {
                 for(int j = 0; j < (nTriangles + 1); j++)
                 {
-                    float x = (float)(posX + (radius * Math.Cos(j * twicePi / nTriangles)));
-                    float y = (float)(posY + (radius * Math.Sin(j * twicePi / nTriangles)));
+                    float x = (float)(objects[i].Position.X + (objects[i].Radius * Math.Cos(j * twicePi / nTriangles)));
+                    float y = (float)(objects[i].Position.Y + (objects[i].Radius * Math.Sin(j * twicePi / nTriangles)));
 
-                    vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), new Color4(r, g, b, 1.0f));
+                    vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), objects[i].Color);
                 }
             }
 
-            int[] indices = new int[polygonCount * (nTriangles * 3 )];
+            int[] indices = new int[objects.Length * (nTriangles * 3 )];
             this.indexCount = 0;
             this.vertexCount = 0;
 
-            for (int i = 0; i < polygonCount; i++)
+            for (int i = 0; i < objects.Length; i++)
             {
 
                 for(int x = 0; x < nTriangles ; x++)
@@ -163,6 +172,7 @@ namespace Collision_Simulation
             this.shaderProgram.setUniform("colorFactor", colorFactor);
             // TODO
             // loop through array of triangle fans
+            // USING THREADS PER CIRCLE OBJ array[i]
             // this.shaderProgram.setUniformMatrix("transformationMatrix", array[i].createTransformMatrix());
 
             base.OnUpdateFrame(args);
