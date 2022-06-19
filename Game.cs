@@ -3,6 +3,7 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using Collision_Simulation.shapes;
+using System.Threading;
 
 namespace Collision_Simulation
 {
@@ -21,7 +22,12 @@ namespace Collision_Simulation
 
         private readonly Color4 backgroundColor = new Color4(0.5f, 0.5f, 0.5f, 1.0f);
         private readonly Color4 orange = new Color4(1.0f, 0.5f, 0.31f, 1.0f);
-        
+
+        private int nTriangles = 20; // Triangles per polyogn (n >= 3)
+        private int polygonCount = 20; // How many polygons will be rendered
+        private TriangleFan[] objects;
+
+
         public Game(int width = 1280, int height = 768, String title = "Collision Simmulation") : base(
             GameWindowSettings.Default,
             new NativeWindowSettings()
@@ -55,10 +61,7 @@ namespace Collision_Simulation
             double twicePi = 2 * Math.PI;
             int windowWidth = this.ClientSize.X;
             int windowHeight = this.ClientSize.Y;
-
-            int nTriangles = 20; // Triangles per polyogn (n >= 3)
-            int polygonCount = 20; // How many polygons will be rendered
-            TriangleFan[] objects = new TriangleFan[polygonCount];
+            objects = new TriangleFan[polygonCount];
 
 
             for(int i = 0; i < objects.Length; i++)
@@ -70,7 +73,8 @@ namespace Collision_Simulation
                 float g = (float)rand.NextDouble();
                 float b = (float)rand.NextDouble();
 
-                objects[i] = new TriangleFan(nTriangles, radius, new Vector2(posX, posY), 1.0f, 1.0f, new Color4(r, g, b, 1.0f));
+                //nTriangles, radius, Vector3 position, Vector3 eulerAngles, Vector3 scale, float velocity, float mass, Color4 color
+                objects[i] = new TriangleFan(nTriangles, radius, new Vector3(posX, posY, 0f), Vector3.Zero, Vector3.One, 1.0f, 1.0f, new Color4(r, g, b, 1.0f));
             }
 
 
@@ -115,6 +119,7 @@ namespace Collision_Simulation
                 this.vertexCount += nTriangles + 1;
             }
 
+
             this.vertexBuffer = new VertexBuffer(VertexPositionColor.VertexInfo, vertices.Length, true);
             this.vertexBuffer.SetData(vertices, vertices.Length);
 
@@ -130,6 +135,16 @@ namespace Collision_Simulation
 
             this.shaderProgram.setUniform("viewportSize", (float)viewport[2], (float)viewport[3]);
             this.shaderProgram.setUniform("colorFactor", this.colorFactor);
+
+            // Nothing shows up when gl_Position * transformationMatrix
+            // --------------------- DEBUG THIS -----------------------
+            for (int i = 0; i < objects.Length; i++)
+            {
+                this.shaderProgram.setUniformMatrix("transformationMatrix", TriangleFan.CreateTransformationMatrix(objects[i].Position, objects[i].EulerAngles, objects[i].Scale), true);
+                Console.WriteLine(TriangleFan.CreateTransformationMatrix(objects[i].Position, objects[i].EulerAngles, objects[i].Scale));
+                Console.WriteLine();
+            }
+
 
             // ShaderProgram Error Log
             string shaderProgramInfo = GL.GetShaderInfoLog(shaderProgram.ShaderProgramHandle);
@@ -170,10 +185,10 @@ namespace Collision_Simulation
             }
 
             this.shaderProgram.setUniform("colorFactor", colorFactor);
-            // TODO
-            // loop through array of triangle fans
-            // USING THREADS PER CIRCLE OBJ array[i]
-            // this.shaderProgram.setUniformMatrix("transformationMatrix", array[i].createTransformMatrix());
+            for (int i = 0; i < objects.Length; i++)
+            {
+                this.shaderProgram.setUniformMatrix("transformationMatrix", TriangleFan.CreateTransformationMatrix(objects[i].Position, objects[i].EulerAngles, objects[i].Scale), true);
+            }
 
             base.OnUpdateFrame(args);
         }
